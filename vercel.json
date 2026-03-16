@@ -1,9 +1,4 @@
 {
-  "functions": {
-    "chatbot.js": {
-      "runtime": "edge"
-    }
-  },
   "rewrites": [
     { "source": "/api/chat", "destination": "/chatbot.js" }
   ]
