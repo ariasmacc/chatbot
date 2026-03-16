@@ -1,10 +1,12 @@
-module.exports = async function handler(req, res) {
-  // Allow requests from your GitHub Pages site
+export const config = {
+  runtime: 'nodejs18.x',
+};
+
+export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Handle preflight
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -15,10 +17,10 @@ module.exports = async function handler(req, res) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`  // API key hidden here
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',  // Magaling na libre na model
+        model: 'llama-3.3-70b-versatile',
         max_tokens: 1000,
         messages: [
           { role: 'system', content: system },
@@ -28,11 +30,11 @@ module.exports = async function handler(req, res) {
     });
 
     const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content || 'Sorry, walang natanggap na sagot.';
-    res.status(200).json({ reply });
+    const reply = data.choices?.[0]?.message?.content || 'Walang natanggap na sagot.';
+    return res.status(200).json({ reply });
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Something went wrong.' });
+    console.error('Error:', error);
+    return res.status(500).json({ error: error.message });
   }
 }
