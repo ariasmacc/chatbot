@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AU Jose Rizal Campus — Student Chatbot</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --au-blue: #002FA7;
+    --au-blue-dark: #001A6B;
+    --au-blue-mid: #1140C4;
+    --au-red: #CC0000;
+    --au-red-bright: #E8001A;
+    --au-white: #FFFFFF;
+    --au-off-white: #F4F6FC;
+    --au-gray: #E8EBF5;
+    --au-text: #0D1236;
+    --au-muted: #6B74A8;
+    --au-bubble-user: #002FA7;
+    --au-bubble-bot: #FFFFFF;
+    --shadow: 0 4px 24px rgba(0,47,167,0.13);
+    --shadow-lg: 0 8px 48px rgba(0,47,167,0.18);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--au-off-white);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Background decoration */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -120px; right: -120px;
+    width: 420px; height: 420px;
+    background: radial-gradient(circle, rgba(0,47,167,0.10) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -80px; left: -80px;
+    width: 320px; height: 320px;
+    background: radial-gradient(circle, rgba(204,0,0,0.07) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  /* ── LAYOUT ── */
+  .app {
+    width: 100%;
+    max-width: 820px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--au-blue);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 72px;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.18);
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--au-red) 0%, var(--au-red-bright) 50%, var(--au-red) 100%);
+  }
+  .header-stripe {
+    position: absolute;
+    top: 0; right: 0;
+    width: 180px; height: 100%;
+    background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.04) 100%);
+    pointer-events: none;
+  }
+
+  .logo-wrap {
+    width: 44px; height: 44px;
+    background: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    color: var(--au-blue);
+    letter-spacing: 0.5px;
+    text-align: center;
+    line-height: 1.1;
+    padding: 4px;
+  }
+
+  .header-info { flex: 1; }
+  .header-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: white;
+    letter-spacing: 1.5px;
+    line-height: 1;
+  }
+  .header-sub {
+    font-size: 11px;
+    color: rgba(255,255,255,0.65);
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    margin-top: 2px;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    background: #4ADE80;
+    border-radius: 50%;
+    box-shadow: 0 0 6px #4ADE80;
+    flex-shrink: 0;
+    animation: pulse-green 2s ease-in-out infinite;
+  }
+  @keyframes pulse-green {
+    0%,100% { opacity:1; box-shadow:0 0 6px #4ADE80; }
+    50% { opacity:0.7; box-shadow:0 0 12px #4ADE80; }
+  }
+
+  /* ── QUICK CHIPS ── */
+  .chips-bar {
+    background: white;
+    border-bottom: 1px solid var(--au-gray);
+    padding: 10px 20px;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    flex-shrink: 0;
+    scrollbar-width: none;
+  }
+  .chips-bar::-webkit-scrollbar { display: none; }
+
+  .chip {
+    white-space: nowrap;
+    background: var(--au-off-white);
+    border: 1.5px solid #D0D8F0;
+    color: var(--au-blue);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s;
+    letter-spacing: 0.2px;
+  }
+  .chip:hover {
+    background: var(--au-blue);
+    color: white;
+    border-color: var(--au-blue);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(0,47,167,0.25);
+  }
+
+  /* ── CHAT AREA ── */
+  .chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: var(--au-off-white);
+    scrollbar-width: thin;
+    scrollbar-color: #C5CEEE transparent;
+  }
+  .chat-area::-webkit-scrollbar { width: 5px; }
+  .chat-area::-webkit-scrollbar-thumb { background: #C5CEEE; border-radius: 4px; }
+
+  /* ── MESSAGES ── */
+  .msg-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    animation: slide-up 0.22s ease-out;
+  }
+  @keyframes slide-up {
+    from { opacity:0; transform:translateY(10px); }
+    to { opacity:1; transform:translateY(0); }
+  }
+
+  .msg-row.user { flex-direction: row-reverse; }
+
+  .avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 0.5px;
+  }
+  .avatar.bot {
+    background: var(--au-blue);
+    color: white;
+    font-size: 11px;
+  }
+  .avatar.user {
+    background: var(--au-red);
+    color: white;
+    font-size: 13px;
+  }
+
+  .bubble {
+    max-width: 72%;
+    padding: 12px 16px;
+    border-radius: 18px;
+    font-size: 14px;
+    line-height: 1.6;
+    word-break: break-word;
+  }
+  .bubble.bot {
+    background: white;
+    color: var(--au-text);
+    border-bottom-left-radius: 4px;
+    box-shadow: var(--shadow);
+    border: 1px solid #E5EAF8;
+  }
+  .bubble.user {
+    background: var(--au-blue);
+    color: white;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 4px 16px rgba(0,47,167,0.25);
+  }
+
+  .bubble strong { font-weight: 700; }
+  .bubble ul { padding-left: 18px; margin: 6px 0; }
+  .bubble li { margin: 3px 0; }
+  .bubble p { margin: 4px 0; }
+  .bubble.user a { color: rgba(255,255,255,0.8); }
+  .bubble a { color: var(--au-blue); text-decoration: underline; }
+
+  /* typing indicator */
+  .typing-dots {
+    display: flex; gap: 4px; align-items: center;
+    padding: 14px 16px;
+  }
+  .typing-dots span {
+    width: 7px; height: 7px;
+    background: var(--au-muted);
+    border-radius: 50%;
+    animation: bounce 1.2s ease-in-out infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%,60%,100% { transform: translateY(0); }
+    30% { transform: translateY(-6px); }
+  }
+
+  /* welcome */
+  .welcome-card {
+    background: white;
+    border: 1px solid #E5EAF8;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 4px;
+    box-shadow: var(--shadow);
+    animation: slide-up 0.3s ease-out;
+  }
+  .welcome-card h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    color: var(--au-blue);
+    font-size: 22px;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .welcome-card p { color: var(--au-muted); font-size: 13.5px; line-height: 1.6; }
+  .welcome-bar {
+    height: 4px;
+    background: linear-gradient(90deg, var(--au-blue) 0%, var(--au-red) 100%);
+    border-radius: 2px;
+    margin-bottom: 14px;
+  }
+
+  /* ── INPUT AREA ── */
+  .input-area {
+    background: white;
+    border-top: 1px solid var(--au-gray);
+    padding: 14px 16px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+
+  .input-wrap {
+    flex: 1;
+    background: var(--au-off-white);
+    border: 2px solid #D0D8F0;
+    border-radius: 24px;
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    transition: border-color 0.2s;
+  }
+  .input-wrap:focus-within {
+    border-color: var(--au-blue);
+    box-shadow: 0 0 0 3px rgba(0,47,167,0.1);
+  }
+
+  #user-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--au-text);
+    resize: none;
+    max-height: 100px;
+    line-height: 1.5;
+  }
+  #user-input::placeholder { color: var(--au-muted); }
+
+  .send-btn {
+    width: 44px; height: 44px;
+    background: var(--au-blue);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.18s;
+    box-shadow: 0 4px 12px rgba(0,47,167,0.3);
+  }
+  .send-btn:hover:not(:disabled) {
+    background: var(--au-blue-mid);
+    transform: scale(1.05);
+    box-shadow: 0 6px 18px rgba(0,47,167,0.4);
+  }
+  .send-btn:disabled {
+    background: #A0AACC;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+  }
+  .send-btn svg { fill: white; }
+
+  /* ── FOOTER NOTE ── */
+  .footer-note {
+    text-align: center;
+    font-size: 11px;
+    color: var(--au-muted);
+    padding: 6px 16px 10px;
+    background: white;
+    flex-shrink: 0;
+  }
+  .footer-note span { color: var(--au-red); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-stripe"></div>
+    <div class="logo-wrap">AU<br>JRC</div>
+    <div class="header-info">
+      <div class="header-title">Chiefs Assist</div>
+      <div class="header-sub">Arellano University · Jose Rizal Campus · Malabon City</div>
+    </div>
+    <div class="status-dot"></div>
+  </div>
+
+  <!-- QUICK CHIPS -->
+  <div class="chips-bar">
+    <div class="chip" onclick="sendChip('Paano mag-enroll bilang bagong estudyante?')">📋 Enrollment Steps</div>
+    <div class="chip" onclick="sendChip('Anong mga kurso ang available sa AU JRC?')">🎓 Courses Offered</div>
+    <div class="chip" onclick="sendChip('Anong mga scholarship ang available?')">💰 Scholarships</div>
+    <div class="chip" onclick="sendChip('Sino ang mga opisyal ng campus?')">👤 Admin Officials</div>
+    <div class="chip" onclick="sendChip('Anong contact numbers ng AU JRC?')">📞 Contact Info</div>
+    <div class="chip" onclick="sendChip('Anong mga strand ang meron sa Senior High School?')">📚 SHS Strands</div>
+    <div class="chip" onclick="sendChip('Ano ang history ng AU Jose Rizal Campus?')">🏫 Campus History</div>
+  </div>
+
+  <!-- CHAT AREA -->
+  <div class="chat-area" id="chat-area">
+    <div class="welcome-card">
+      <div class="welcome-bar"></div>
+      <h2>👋 Kumusta, future Chief!</h2>
+      <p>Ako si <strong>Chiefs Assist</strong>, ang inyong AI na gabay para sa lahat ng tanong tungkol sa <strong>Arellano University – Jose Rizal Campus</strong>. Pwede kang magtanong tungkol sa enrollment, mga kurso, scholarships, admin contacts, at marami pa! Maaari kang magsulat sa Filipino o English. 🔵🔴</p>
+    </div>
+  </div>
+
+  <!-- INPUT -->
+  <div class="input-area">
+    <div class="input-wrap">
+      <textarea id="user-input" placeholder="Magtanong tungkol sa AU JRC..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    </div>
+    <button class="send-btn" id="send-btn" onclick="sendMessage()">
+      <svg width="18" height="18" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+    </button>
+  </div>
+  <div class="footer-note">Chiefs Assist · Powered by AI · <span>AU Jose Rizal Campus</span> · Gov. Pascual Ave., Malabon City</div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  SYSTEM PROMPT — Edit this section to update the AI's knowledge
+//  Add or update any campus information below
+// ══════════════════════════════════════════════════════════
+const SYSTEM_PROMPT = `You are "Chiefs Assist", a friendly and helpful AI chatbot for Arellano University – Jose Rizal Campus (AU JRC / AU Malabon) located at Gov. Pascual Avenue, Malabon City, Metro Manila.
+
+You can respond in Filipino (Tagalog) or English, whichever the student prefers. Be warm, helpful, and conversational — like a friendly campus guide.
+
+=== CAMPUS OVERVIEW ===
+- Full Name: Arellano University – Jose Rizal Campus (also known as AU Malabon or AU JRC)
+- Address: Gov. Pascual Avenue, Malabon City, Metro Manila
+- Campus Size: 0.56 hectares
+- History: Originally established in 1950. Formerly known as the Gregorio Sancianco High School Campus; functioned as extension of the Elisa Esguerra Campus. Closed in the 1980s, redeveloped, and officially reopened/renamed as the Jose Rizal Campus in 2017.
+- Website: www.arellano.edu.ph
+
+=== CONTACT INFORMATION ===
+- High School Principal's Office: 8-921-2744
+- Elementary AVP / Principal's Office: 8-579-3635
+- Registrar's Office: 8-281-0025
+- Bursar's Office: 8-286-5580
+- General Lines: 8-579-7289 | 8-921-0386
+- High School Email: hs.joserizal@arellano.edu.ph
+- OSA Email: aujrc.osa@arellano.edu.ph
+- Facebook: @aujoserizal (Main) | @ArellanoUniversityOSA.JRC (Student Affairs)
+
+=== KEY ADMINISTRATION ===
+- AVP & Program Chair, School of Education: Dr. Emma S. Salumbre, Ph.D.
+- Principal, High School: Ma. Aileen DC. Cruz, M.A.E.
+- Principal, Elementary: Mr. Edwin C. Zamora, M.A.E.
+- Program Chair, Business Administration: Mr. Jose Y. Trencio, D.B.A.
+- Program Chair, Computer Science: Ms. Gina R. Clemente, M.I.T.
+- Program Chair, Hospitality & Tourism: Mr. Jan-Ivan D. Martin, M.B.A.
+- Department Chair, Criminal Justice: Mr. Carlo A. Tagayuna, Ll.B.
+
+=== COLLEGE PROGRAMS OFFERED ===
+School of Hospitality & Tourism Management:
+- BSHM (Bachelor of Science in Hospitality Management)
+- BSTM (Bachelor of Science in Tourism Management)
+
+School of Business Administration:
+- BSBA with majors: Marketing Management, Financial Management, Human Resource Development Management
+
+College of Arts and Sciences:
+- BA in English Language, Psychology, Political Science
+
+School of Criminal Justice:
+- BS in Criminology
+
+School of Education:
+- Bachelor of Secondary Education (majors: English, Mathematics, Social Studies)
+- Bachelor of Elementary Education (General Education)
+- Bachelor of Physical Education
+
+School of Computer Science:
+- BSCS (Bachelor of Science in Computer Science)
+
+=== BASIC EDUCATION ===
+- Pre-School: Pre-Kindergarten, Kindergarten
+- Elementary (Grades 1-6) — PACUCOA Level III Accredited
+- Junior High School (Grades 7-10) — PACUCOA Level II Accredited
+- Senior High School
+
+=== SENIOR HIGH SCHOOL (SHS) STRANDS ===
+ACADEMIC TRACK:
+- HUMSS (Humanities and Social Sciences)
+- STEM (Science, Technology, Engineering and Mathematics)
+- GAS (General Academic Strand)
+- ABM (Accountancy, Business and Management)
+
+TECHNICAL-VOCATIONAL-LIVELIHOOD (TVL) TRACK:
+- Home Economics: Food & Beverage Services, Bread and Pastry Production, Housekeeping, Tour Guiding Services, Cookery
+- Information and Communications Technology: Computer Programming, Animation
+- Industrial Arts: Electrical Installation and Maintenance, Machining
+
+SHS FEATURES: No entrance exam required. Uses ESC and DepEd Voucher for Grades 7–10 (₱700/month/school year), or ₱470/month if locked in from Junior to Senior High School. Free use of textbooks in Science, Math, and English. Air-conditioned classrooms. Flexible learning modality.
+
+=== ENROLLMENT PROCESS ===
+
+NEW STUDENT:
+A. Registrar's Office:
+  1. Submit admission credentials: Form 138 + Certificate of Good Moral Character (freshmen); Transcript of Records + Honorable Dismissal (transferees); PSA Birth Certificate; Permit to Cross-Enroll (if cross-enrollee)
+  2. Fill up Student Information Sheet (SIS)
+  3. Apply for and obtain Student Number
+
+B. Dean's Office of chosen college:
+  1. Fill up Student Enrollment Form
+  2. Get approval of class schedule (signed by class adviser or dean)
+  3. Encode and get assessment of fees
+
+(Optional) Office of Student Affairs:
+  - Fill up Discount Form if applicable
+
+C. Bursar's Office:
+  1. Present Student Enrollment Form
+  2. Pay tuition and other fees
+
+D. Information Technology Center:
+  1. Get printout of Registration and Assessment Form (RAF)
+  2. Have RAF signed and stamped "OFFICIALLY ENROLLED"
+  3. Fill up ID Application Form
+  4. Have ID photo taken and electronic signature made
+
+OLD STUDENT:
+- Same as new student EXCEPT: starts at Dean's Office (no need to go to Registrar first for credentials)
+- Also goes to Bursar's Office → IT Center
+
+FOREIGN STUDENTS (from school abroad):
+1. Submit authenticated academic records (with red ribbon or Apostille), Affidavit of Support, passport data page
+2. Execute notarized letter to Bureau of Immigration (BI) for Tourist Visa → Student Visa conversion
+3. Registrar issues notarized Letter of Acceptance and Letter of Endorsement for BI
+4. Apply for medical certificate from Bureau of Quarantine
+5. File BI Form for visa conversion
+6. Upon issuance of Student Visa, officially enroll
+
+FOREIGN STUDENTS (transferring from Philippine school):
+1. Obtain Transfer Credential, copy of grades/TOR, Certificate of Good Moral Character, letter of no objection from previous school
+2. Apply for transfer to AU
+3. Secure clearance/permit from CHED-NCR (assisted by AU Registrar)
+4. Coordinate with Registrar to renew student visa at BI and obtain official TOR
+
+=== SCHOLARSHIP PROGRAMS ===
+
+F. CAYCO MEMORIAL SCHOLARSHIP:
+- For incoming freshmen who are AU graduates, specially nominated
+- 100% tuition and miscellaneous fee
+- Requirements: Certified copy of grades, Certificate of enrollment, Certificate of Award
+
+ESGUERRA SCHOLARSHIP FOR VALEDICTORIAN/SALUTATORIAN:
+- For AU elementary graduates with honors (First and Second Honors)
+- Requirements: Certification letter from principal, photocopy of card
+
+JUNIOR HIGH SCHOOL ENTRANCE SCHOLARSHIP (for elementary graduates with honors — AU and non-AU graduates):
+- With Highest Honors (GWA 98-100%): 100% tuition fee
+- With High Honors (GWA 95-97%): 75% tuition fee
+- With Honors (GWA 90-94%): 50% tuition fee
+- Requirements: Certification letter from Principal with GWA, photocopy of card
+
+COLLEGE ENTRANCE SCHOLARSHIP (for high school graduates with honors — AU and non-AU graduates):
+- With Highest Honors (GWA 98-100%): 100% tuition fee
+- With High Honors (GWA 95-97%): 75% tuition fee
+- With Honors (GWA 90-94%): 50% tuition fee
+- Requirements: Certification letter from Principal with GWA, photocopy of card
+
+ACADEMIC ACHIEVEMENT IN COLLEGE:
+- Highest average in college/year level: 100% tuition fee
+- Second highest average: 50% tuition fee
+- Third highest average: 25% tuition fee
+- Must be enrolled with minimum 18 units; no grades lower than 1.75; recommended by Guidance, Department Head, and Registrar
+
+BASIC EDUCATION (Elem/JHS/SHS) HONORS:
+- 1st Honor: 100% tuition fee
+- 2nd Honor: 50% tuition fee
+- 3rd Honor: 25% tuition fee
+- For currently enrolled AU students only
+
+=== SPECIAL STUDENT DISCOUNTS ===
+
+PD 577 (Dependent of AFP Personnel who died in line of duty):
+- Requirements vary for new vs old applicants (Casualty Report, Death Certificate, Birth Certificate, Yellow Book, AFP Certification)
+
+Student Council President: 50% tuition fee
+Editor-in-Chief of Official Student Publication: 50% tuition fee
+ROTC Corps Commandant: 50% tuition fee
+ROTC First Class Cadet Officer: 25% tuition fee
+Member of Special Cultural Group / Ambassadors of Goodwill: 15% tuition fee
+
+ALUMNI DISCOUNT: 20% tuition fee (for children of AU alumni or AU graduates from elementary/college)
+SIBLING DISCOUNT: 2nd sibling = 10%; 3rd or more = 15%
+
+=== OTHER DISCOUNTS ===
+Police Officers of NCR: 20% tuition fee
+Chief Nurse / Asst. Chief Nurse / Nurse Supervisor enrolled in Masteral/Doctoral: 20%
+Private Employees enrolled in Masteral/Doctoral: 25%
+Private School Teachers, Principals enrolled in Masteral/Doctoral: 25%
+Public School Teachers, Principals enrolled in Masteral/Doctoral: 60%
+DECS/CHED Supervisors: 20%
+
+AU EMPLOYEE DISCOUNTS:
+- AUFO Member/Dependent: 100% tuition + miscellaneous fees (pay other fees)
+- AUHSFO Member/Dependent: 100% tuition + miscellaneous fees
+- AUEA Member/Dependent: 100% tuition only
+
+NOTE: All discounts are subject to change without prior notice. Professional discounts apply to the individual professional, not their children/dependents.
+
+=== ADMISSION REQUIREMENTS ===
+
+AU adopts an "open admission, selective-retention" policy. 
+
+FRESHMEN:
+1. Form 138 (High School Report Card)
+2. Certificate of Good Moral Character (from HS principal or barangay official)
+3. Certificate of eligibility from CHED (only if unable to secure school credentials due to school closure or calamity)
+
+TRANSFER STUDENTS:
+1. Honorable Dismissal
+2. Transcript of Records or Certification of Subjects Taken
+3. Certificate of Good Moral Character
+
+FOREIGN STUDENTS:
+1. Authenticated Transcript of Records
+2. Two (2) photocopies each of ACR (Alien Certificate of Registration) and CRTS (Certificate of Residence for Temporary Students)
+3. Two (2) photocopies of Student's Visa
+4. Two (2) ID photos (1.5" x 1.5")
+
+CROSS ENROLLEES:
+- Permit to cross-enroll from school of origin (stating subjects to be taken and reason)
+
+=== CAMPUS EVENTS & CULTURE ===
+- AU has a Gradball (graduation ball)
+- Miting de Avance (campaign event before elections)
+- Seminars and academic events
+- Foundation Week Concerts — AU has a tradition of bringing OPM artists to campuses
+  * 2019 (81st Foundation Week): Parokya ni Edgar performed LIVE at AU Malabon/Jose Rizal Campus (performed "Buloy," "Silvertos," "Harana")
+  * Early 2020: Callalily (Kean Cipriano) performed at AU Malabon/JRC right before the pandemic; featured the campus in their "Callalily Experience" YouTube vlog
+  * During pandemic: AU held a virtual concert "Himig AU, Himig Natin" featuring Moira Dela Torre and Kiyo; featured Minecraft-built versions of all AU campuses including JRC
+  * May 2023: Silent Sanctuary headlined the first post-pandemic F2F concert "#OneArellano AU Light Wave"
+- Other AU-wide events: Chiefs Talent Showdown, Battle of the Bands, One Arellano Concert, Mister and Miss AU, Intramurals, Pep Rally, NCAA Season, PICC Graduation, Founding Anniversary
+- AU competes in the NCAA (National Collegiate Athletic Association Philippines)
+
+=== IMPORTANT NOTES FOR THE AI ===
+- Always be warm, friendly, and encouraging
+- If asked about specific tuition fees or exact amounts, acknowledge that fees may change and advise students to contact the Bursar's Office (8-286-5580) for the most current rates
+- If asked about something not covered in your knowledge base, politely say you don't have that specific info and provide the relevant contact (Registrar, OSA, etc.)
+- For enrollment deadlines or current school year schedules, advise students to check the official Facebook page (@aujoserizal) or call the office directly
+- You represent AU JRC only — for questions about other AU campuses, refer them to the main AU website or their specific campus contacts
+
+TODO FOR ADMIN: Add the following information when available:
+- Exact current tuition fee rates per program/strand
+- Enrollment schedule / academic calendar dates
+- Online enrollment portal / student portal login details
+- LMS (Learning Management System) access instructions
+- PE uniform prices and where to buy
+- ID replacement process and fees
+- Good Moral Certificate / Form 137 request process
+- Specific club and organization list for SHS
+- Work Immersion coordinator details for Grade 12
+- Grading system breakdown (passing grade, weighted average computation)
+- Dress code / uniform schedule (civilian day, wash day)
+- School policies on gadgets, hair color, etc.
+- Commute guide to AU Malabon (from Monumento, Navotas, etc.)
+- Campus map / building directory
+- Wi-Fi availability for students
+`;
+
+// ══════════════════════════════════════════════════════════
+//  CHAT LOGIC
+// ══════════════════════════════════════════════════════════
+let conversationHistory = [];
+let isLoading = false;
+
+const chatArea = document.getElementById('chat-area');
+const userInput = document.getElementById('user-input');
+const sendBtn = document.getElementById('send-btn');
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function sendChip(text) {
+  userInput.value = text;
+  sendMessage();
+}
+
+function addMessage(role, content) {
+  const row = document.createElement('div');
+  row.className = `msg-row ${role}`;
+
+  const avatar = document.createElement('div');
+  avatar.className = `avatar ${role}`;
+  avatar.textContent = role === 'bot' ? 'AU' : 'YOU';
+
+  const bubble = document.createElement('div');
+  bubble.className = `bubble ${role}`;
+
+  // Simple markdown-like formatting
+  let html = content
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>');
+
+  bubble.innerHTML = `<p>${html}</p>`;
+  row.appendChild(avatar);
+  row.appendChild(bubble);
+  chatArea.appendChild(row);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function showTyping() {
+  const row = document.createElement('div');
+  row.className = 'msg-row bot';
+  row.id = 'typing-row';
+
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar bot';
+  avatar.textContent = 'AU';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble bot';
+  bubble.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+
+  row.appendChild(avatar);
+  row.appendChild(bubble);
+  chatArea.appendChild(row);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function removeTyping() {
+  const el = document.getElementById('typing-row');
+  if (el) el.remove();
+}
+
+async function sendMessage() {
+  const text = userInput.value.trim();
+  if (!text || isLoading) return;
+
+  userInput.value = '';
+  userInput.style.height = 'auto';
+  isLoading = true;
+  sendBtn.disabled = true;
+
+  addMessage('user', text);
+  conversationHistory.push({ role: 'user', content: text });
+
+  showTyping();
+
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: conversationHistory,
+        system: SYSTEM_PROMPT
+      })
+    });
+
+    const data = await response.json();
+    removeTyping();
+
+    const reply = data.reply || "Sorry, hindi ko na-process ang iyong tanong.";   
+
+    conversationHistory.push({ role: 'assistant', content: reply });
+    addMessage('bot', reply);
+
+  } catch (err) {
+    removeTyping();
+    addMessage('bot', "Oops! May problema sa koneksyon. Please check your internet connection at subukan ulit. 😔");
+  }
+
+  isLoading = false;
+  sendBtn.disabled = false;
+  userInput.focus();
+}
+</script>
+</body>
+</html>
